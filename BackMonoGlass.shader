@@ -40,7 +40,6 @@ Shader "Unlit/BackMonoGlass"
             };
 
             sampler2D _GrabPassTexture;
-            
             fixed _Reflection;
             
             v2f vert (appdata v)
@@ -61,21 +60,24 @@ Shader "Unlit/BackMonoGlass"
                 half3 reflDir = reflect(-viewDir, i.normal);
                 // キューブマップと反射方向のベクトルから反射先の色を取得する
                 half4 refColor = UNITY_SAMPLE_TEXCUBE(unity_SpecCube0, reflDir);
-                
+                refColor *= _Reflection; //Reflectionスライダーを反映
+
                 //GrabPassのテクスチャ
-                float4 grabTex = tex2Dproj(_GrabPassTexture, i.uvGrab) + (refColor * _Reflection); 
+                float4 grabTex = tex2Dproj(_GrabPassTexture, i.uvGrab) ; 
                 float4 col = float4(0, 0, 0, 1);   
+
+                //モノクロ変換
+				const float3 monochromeScale = float3(0.298912, 0.586611, 0.114478);
+				float grayColor = dot(grabTex.rgb, monochromeScale);
 
                 //裏面だけモノクロ
                 if (facing > 0){
-                    col = grabTex;
+                    //grabpassと環境マップを表示
+                    col = grabTex + refColor;
                 }
                 else {
-                    //モノクロ変換
-				    const float3 monochromeScale = float3(0.298912, 0.586611, 0.114478);
-				    float grayColor = dot(grabTex.rgb, monochromeScale);
-
-                    col = float4(grayColor, grayColor, grayColor, 1);
+                    //モノクロのgrabpassとカラーの環境マップを表示
+                    col = float4(grayColor, grayColor, grayColor, 1) + refColor;
                 }
                 
                 return col;
